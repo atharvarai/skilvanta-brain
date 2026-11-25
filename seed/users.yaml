@@ -1,0 +1,9 @@
+# Demo users for local development and evals. FICTIONAL people, synthetic ids.
+# `python -m core.cli token <handle>` signs a token for one of them with BRAIN_JWT_SECRET.
+# In production the company's backend issues tokens; this file is not used there.
+users:
+  riya:   {sub: L-1042, name: Riya Kulkarni, roles: [learner]}
+  kabir:  {sub: L-1077, name: Kabir Shah, roles: [learner]}
+  arjun:  {sub: M-201, name: Arjun Desai, roles: [mentor]}
+  sana:   {sub: S-301, name: Sana Merchant, roles: [support_agent]}
+  admin:  {sub: A-001, name: Ops Admin, roles: [admin]}

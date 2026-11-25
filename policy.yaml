@@ -1,0 +1,16 @@
+# Who may read which document labels and call which tools. FICTIONAL company.
+# Unlabelled documents are readable by everyone. Anything not granted here is denied.
+roles:
+  learner:
+    read: []
+    tools: [get_my_enrollments, get_course_progress, list_mentor_slots, book_mentor_session,
+            request_refund]
+  mentor:
+    read: [internal]
+    tools: [get_mentee_progress]
+  support_agent:
+    read: [internal]
+    tools: [get_mentee_progress]
+  admin:
+    read: [internal, admin_only]
+    tools: ["*"]

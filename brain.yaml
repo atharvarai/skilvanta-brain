@@ -1,0 +1,124 @@
+# Domain pack for Skilvanta, a FICTIONAL ed-tech company. All data here is synthetic.
+name: Skilvanta
+description: Sells courses, mentors learners and helps them get placed.
+
+# Prompt files live in prompts/ as <name>.v<N>.md. The newest version is used unless pinned:
+# prompts:
+#   pinned: {persona: 1}
+
+# Retrieval over the Markdown files in docs/. Build the index with `make ingest`.
+# Front matter `labels` on a file restricts who may read it (enforced by the access layer).
+rag:
+  docs: docs
+  top_k: 5
+  embedder: {kind: fastembed, model: BAAI/bge-small-en-v1.5}
+  # Second pass over the top 20 candidates. Turned on because it lifted section-level
+  # retrieval in `make eval-retrieval` from 20/23 to 22/23 (brain-template docs/results.md, M4).
+  reranker: {kind: fastembed, model: jinaai/jina-reranker-v1-tiny-en, candidates: 20}
+
+# Tools come from MCP servers and are discovered at start-up; nothing here names a tool.
+# The demo server (mcp_server/server.py) stands in for Skilvanta's backend. Locally the brain
+# starts it over stdio; in production point at the server the backend runs, for example
+#   skilvanta: {transport: http, url: "http://localhost:8792/mcp"}
+tools:
+  servers:
+    skilvanta:
+      transport: stdio
+      command: [python, mcp_server/server.py]
+      pass_env: [BRAIN_JWT_SECRET]  # the server checks user tokens itself
+  timeout_seconds: 10
+  max_result_chars: 4000
+
+# Every request carries the user's token (a JWT from Skilvanta's backend). Roles in the token
+# decide which documents and tools the user gets (policy.yaml), and tools run as the user:
+# the token goes on to the MCP server, which checks it again.
+access:
+  jwt:
+    algorithm: HS256
+    secret_env: BRAIN_JWT_SECRET
+    issuer: skilvanta-backend
+    audience: skilvanta-brain
+  policy: policy.yaml
+  dev_users: seed/users.yaml  # demo users for `core.cli token` and the evals
+
+# Checks around every model call. Personal data is redacted from traces, logs and the audit
+# log; messages that try to override the assistant are refused without a model call;
+# documents and tool results that give orders are dropped or marked; answers that copy the
+# system prompt are replaced; figures that appear in no source are flagged on the trace.
+guardrails:
+  pii: {kinds: [email, phone, card, ip_address, in_pan, in_aadhaar]}
+  injection: {detector: heuristic, action: block, scan_sources: true}
+  grounding: {check: numbers, action: flag}
+  prompt_leak: {action: block}
+
+# Answers reused for users who may read the same documents. Only exact repeats: on this
+# pack's question pairs the embedder scored near misses above true paraphrases, so no
+# semantic threshold was safe (`make cache-check`). Tool answers are never cached.
+cache:
+  exact: true
+  semantic: {enabled: false}
+  ttl_hours: 24
+
+# Which tier answers each question. Measured on the 51 evals (brain-template docs/results.md, M9): with
+# prompt caching on, routing saved little, and the heuristic router's small-tier answers
+# lost a case (the small model refused an admin a document the admin may read). So: mid.
+router:
+  kind: fixed
+  default_tier: mid
+
+# Each profile maps every tier to an ordered fallback chain.
+# Pick one with `active`, or override per process with BRAIN_MODEL_PROFILE.
+models:
+  active: claude_code
+  profiles:
+    # Free for anyone with a Claude Code subscription: uses the local `claude -p` CLI.
+    claude_code:
+      small: [{provider: claude_code, model: haiku}]
+      mid: [{provider: claude_code, model: sonnet}]
+      large: [{provider: claude_code, model: opus}]
+    # Free and offline: needs Ollama running locally.
+    ollama:
+      small: [{provider: ollama, model: "llama3.1:8b"}]
+      mid: [{provider: ollama, model: "llama3.1:8b"}]
+      large: [{provider: ollama, model: "llama3.1:8b"}]
+    # Needs ANTHROPIC_API_KEY. The second entry in a chain is the fallback.
+    anthropic:
+      small: [{provider: anthropic, model: claude-haiku-5-5}]
+      mid:
+        - {provider: anthropic, model: claude-sonnet-5-5}
+        - {provider: anthropic, model: claude-haiku-5-5}
+      large:
+        - {provider: anthropic, model: claude-opus-5-5}
+        - {provider: anthropic, model: claude-sonnet-5-5}
+    # OpenAI works the same way (needs OPENAI_API_KEY). Fill in current model ids:
+    # openai:
+    #   small: [{provider: openai, model: <small-model-id>}]
+    #   mid: [{provider: openai, model: <mid-model-id>}]
+    #   large: [{provider: openai, model: <large-model-id>}]
+
+  # US dollars per million tokens, by model id: used to cost every trace and eval run.
+  # cache_read / cache_write price input served from or written to the prompt cache.
+  # The claude_code aliases carry API list prices so traces show what the same traffic would
+  # cost on the API; the subscription itself is not billed per call. Ollama runs are free.
+  prices:
+    claude-haiku-5-5: {input: 0.10, output: 0.50, cache_read: 0.01, cache_write: 0.125}
+    claude-sonnet-5-5: {input: 2.00, output: 10.00, cache_read: 0.20, cache_write: 2.50}
+    claude-opus-5-5: {input: 4.00, output: 20.00, cache_read: 0.40, cache_write: 5.00}
+    haiku: {input: 0.10, output: 0.50, cache_read: 0.01, cache_write: 0.125}
+    sonnet: {input: 2.00, output: 10.00, cache_read: 0.20, cache_write: 2.50}
+    opus: {input: 4.00, output: 20.00, cache_read: 0.40, cache_write: 5.00}
+    "llama3.1:8b": {input: 0, output: 0}
+
+# Traces keep timings, tokens, cost, prompt versions and document ids. Question and answer
+# text is kept only when capture_content is true: fine here because all data is synthetic.
+observability:
+  capture_content: true
+
+# `make eval` asks the model every case and grades it; `make eval-retrieval` checks only
+# retrieval, needs no model and runs in CI. Both exit non-zero below min_pass_rate.
+evals:
+  cases: evals/cases.jsonl
+  min_pass_rate: 0.85
+  judge_tier: mid
+  concurrency: 4
+  default_user: riya  # cases run as this demo user unless they name another

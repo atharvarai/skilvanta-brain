@@ -1,0 +1,22 @@
+// Question pairs for choosing the semantic cache threshold (`make cache-check`).
+// same: true when the second question may be answered with the first one's answer.
+{"a": "How much does the full-stack course cost?", "b": "What's the fee for the full stack web development course?", "same": true}
+{"a": "How long is the data science course?", "b": "What is the duration of the data science and machine learning programme?", "same": true}
+{"a": "When are the backend course live classes?", "b": "What is the class schedule for backend engineering with python?", "same": true}
+{"a": "Do I get a certificate at the end?", "b": "Will I receive a certificate after finishing the course?", "same": true}
+{"a": "What are the support hours?", "b": "When is support available?", "same": true}
+{"a": "Can I watch the recordings after the course ends?", "b": "Do I keep access to class recordings once the course is over?", "same": true}
+{"a": "How many mentor sessions do I get per month?", "b": "How many 1:1 mentor sessions are included each month?", "same": true}
+{"a": "Is EMI available for the DSA course?", "b": "Can I pay for DSA and interview prep in instalments?", "same": true}
+{"a": "How do I contact support?", "b": "how can I reach the support team", "same": true}
+{"a": "What is the refund policy?", "b": "what's your refund policy", "same": true}
+{"a": "How much does the full-stack course cost?", "b": "How much does the data science course cost?", "same": false}
+{"a": "How long is the data science course?", "b": "How long is the backend course?", "same": false}
+{"a": "Can I pause the backend course?", "b": "Can I pause the DSA course?", "same": false}
+{"a": "What happens if I miss a mentor session?", "b": "What happens if my mentor misses a session?", "same": false}
+{"a": "Is placement support included?", "b": "Is a placement guaranteed?", "same": false}
+{"a": "Is EMI available for the DSA course?", "b": "Is EMI available for the full-stack course?", "same": false}
+{"a": "Can I get a refund on day 5?", "b": "Can I get a refund on day 25?", "same": false}
+{"a": "Do I get a refund if I attended one class?", "b": "Do I get a refund if I attended three classes?", "same": false}
+{"a": "What is the monthly EMI over 6 months for the backend course?", "b": "What is the monthly EMI over 9 months for the backend course?", "same": false}
+{"a": "Can I reschedule a mentor session?", "b": "Can I reschedule a mentor session less than 12 hours before?", "same": false}

@@ -1,0 +1,24 @@
+[project]
+name = "skilvanta-brain"
+version = "0.1.0"
+description = "The AI assistant for Skilvanta, a fictional ed-tech company, built on brain-template"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.12"
+dependencies = [
+    "brain-template @ git+https://github.com/atharvarai/brain-template@v0.1.0",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.3", "ruff>=0.8"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
